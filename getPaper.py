@@ -13,6 +13,7 @@ try:
 except ModuleNotFoundError:
     import subprocess
     import sys
+
     print("Installing dependencies...")
     subprocess.check_call(
         [
@@ -67,8 +68,24 @@ class Paper:
         if soup == None:
             raise Exception("soup is None")
 
-        table = soup.find(
-            'table', {'id': 'format0_disparea'}).find_all('tr')
+        all_table = soup.find_all(
+            'table', {'id': 'format0_disparea'})
+
+        table = all_table[0].find_all('tr')
+
+        zh_abstract = ""
+        try:
+            for t in all_table[1].find_all('tr'):
+                zh_abstract += t.getText(strip=True).replace(u"\xa0", " ")
+        except:
+            pass
+
+        en_abstract = ""
+        try:
+            for t in all_table[2].find_all('tr'):
+                en_abstract += t.getText(strip=True).replace(u"\xa0", " ")
+        except:
+            pass
 
         link = table[0].find(
             'input', {'id': 'fe_text1'})["value"]
@@ -77,6 +94,8 @@ class Paper:
 
             self.papers[self.school][link] = {}
             self.papers[self.school][link]["本論文永久網址"] = link
+            self.papers[self.school][link]["中文摘要"] = zh_abstract
+            self.papers[self.school][link]["英文摘要"] = en_abstract
 
             for d in table[2:]:
                 th = d.find('th', {'headers': 'format_0_table'})
@@ -291,7 +310,7 @@ class PaperCrawler:
             except Exception as e:
                 # print("Error: {}".format(e))
                 print("Failed while fetching {}: {}/{}.".format(school,
-                      paper_id, paper_num))
+                                                                paper_id, paper_num))
                 print("Save current progress.")
                 self.prev_id = paper_id
                 paperCollector.save()
